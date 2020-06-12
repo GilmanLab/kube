@@ -4,8 +4,6 @@ import pulumi
 from pulumi_kubernetes.core.v1 import Namespace
 from pulumi_kubernetes.helm.v3 import Chart, ChartOpts
 
-config = pulumi.Config().require_object('nfs')
-
 
 class NFSProperties:
     """NFS properties passed to an NFSProvisioner instance and used to initialize and configure it."""
