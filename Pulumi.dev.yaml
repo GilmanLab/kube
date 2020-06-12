@@ -1,0 +1,8 @@
+config:
+  kubernetes:context: kubernetes-admin@glab.dev
+  kubernetes:nfs:
+    server: 192.168.3.91
+    path: /vsanfs/kube-dev
+  kubernetes:loadbalancer:
+
+  pulumi:template: kubernetes-python
