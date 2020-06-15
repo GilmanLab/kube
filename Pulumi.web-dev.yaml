@@ -1,0 +1,15 @@
+config:
+  kubernetes:context: kubernetes-admin@glab.dev
+  kubernetes:issuer:
+    namespace: cert-manager
+    acme:
+      address: 'https://acme-v02.api.letsencrypt.org/directory'
+      email: joshuagilman@gmail.com
+    cloudflare:
+      email: joshuagilman@gmail.com
+      api_token:
+        path: cloudflare
+        key: api_token
+  kubernetes:nginx:
+    namespace: 'nginx'
+  kubernetes:vault_address: 'http://vault.gilman.io:8200'

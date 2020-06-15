@@ -7,23 +7,19 @@ import yaml as yml
 from pulumi_kubernetes import yaml
 from pulumi_kubernetes.core.v1 import ConfigMap, Namespace, Secret
 
-URL = 'https://raw.githubusercontent.com/metallb/metallb/v0.9.3/manifests/metallb.yaml'
-
-
-def _add_namespace(obj):
-    obj['metadata']['namespace'] = 'metallb-system'
-
 
 class MetalLBProperties:
     """MetalLB properties passed to an MetalLB instance and used to initialize and configure it."""
 
-    def __init__(self, network_start: str, network_end: str):
+    def __init__(self, manifest: str, namespace: str, network_start: str, network_end: str):
         """Initializes MetalLBProperties using the given parameters.
 
         Args:
             network_start: The start range of addresses that the LB will assign
             network_end: The end range of addresses that the LB will assign
         """
+        self.manifest = manifest
+        self.namespace_str = namespace
         self.network_start = network_start
         self.network_end = network_end
 
@@ -38,6 +34,8 @@ class MetalLBProperties:
             An instance of MetalLBProperties configured using the passed configuration.
         """
         return MetalLBProperties(
+            manifest=cfg['manifest'],
+            namespace=cfg['namespace'],
             network_start=cfg['network']['start'],
             network_end=cfg['network']['end'],
         )
@@ -52,7 +50,7 @@ class MetalLB(pulumi.ComponentResource):
         self.props = props
         self.namespace = Namespace('metallb-namespace',
                                    metadata={
-                                       'name': 'metallb-system',
+                                       'name': self.props.namespace_str,
                                        'labels': {
                                            'app': 'metallb'
                                        }
@@ -60,14 +58,14 @@ class MetalLB(pulumi.ComponentResource):
                                    opts=pulumi.ResourceOptions(parent=self))
 
         self.resources = yaml.ConfigFile('metallb-resources',
-                                         URL,
-                                         transformations=[_add_namespace],
+                                         self.props.manifest,
+                                         transformations=[self._add_namespace],
                                          opts=pulumi.ResourceOptions(parent=self))
 
         secret_key = ''.join(random.SystemRandom().choice(string.ascii_uppercase + string.digits) for _ in range(128))
         self.secret = Secret('metallb-memberlist',
                              metadata={
-                                 'namespace': 'metallb-system',
+                                 'namespace': self.props.namespace_str,
                                  'name': 'memberlist'
                              },
                              type='general',
@@ -89,11 +87,14 @@ class MetalLB(pulumi.ComponentResource):
         }
         self.config = ConfigMap('metallb-config',
                                 metadata={
-                                    'namespace': 'metallb-system',
+                                    'namespace': self.props.namespace_str,
                                     'name': 'config'
                                 },
                                 data={
                                     "config": yml.dump(config)
                                 },
                                 opts=pulumi.ResourceOptions(parent=self))
+
+    def _add_namespace(self, obj, opts=None):
+        obj['metadata']['namespace'] = self.props.namespace_str
 
